@@ -122,7 +122,7 @@ const AudioRecorderPage = () => {
 
   return (
     <div className="">
-      <div className="flex gap-1 w-[80%] mx-auto justify-center">
+      <div className="flex gap-1 w-[80%] mx-auto justify-center mt-4">
         <Button
           onClick={() => startRecording()}
           disabled={isRecording || isUploading}
