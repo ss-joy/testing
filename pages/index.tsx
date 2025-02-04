@@ -121,9 +121,8 @@ const AudioRecorderPage = () => {
   }
 
   return (
-    <div>
-      {isRecording ? "Recording.....!!!!! 🎙️🎙️🎙️🎙️" : null}
-      <div className="flex gap-5">
+    <div className="">
+      <div className="flex gap-1 w-[80%] mx-auto justify-center">
         <Button
           onClick={() => startRecording()}
           disabled={isRecording || isUploading}
@@ -144,7 +143,11 @@ const AudioRecorderPage = () => {
           Upload to server
         </Button>
       </div>
-
+      {isRecording ? (
+        <div className="text-center animate-pulse">
+          "Recording.....!!!!! 🎙️🎙️🎙️🎙️"
+        </div>
+      ) : null}
       {audioUrl ? (
         <audio
           controls
@@ -156,7 +159,9 @@ const AudioRecorderPage = () => {
       {/* llll */}
 
       <section className="flex flex-col gap-5 mx-auto w-[80%] mt-5 items-center">
-        <h1 className="text-center w-full">Recorded audios</h1>
+        <h1 className="text-center w-full text-lg text-slate-400">
+          Recorded audios
+        </h1>
         {recordedAudios?.map((d, index) => (
           <audio src={d} key={index} controls></audio>
         ))}
