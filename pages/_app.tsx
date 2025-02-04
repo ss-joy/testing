@@ -14,7 +14,7 @@ export default function App({ Component, pageProps }: AppProps) {
       {/* <QueryClientProvider client={queryClient}> */}
       <Provider store={store}>
         {/* <ReactQueryDevtools /> */}
-        <NavigationMenuDemo />
+        {/* <NavigationMenuDemo /> */}
         <Component {...pageProps} />
       </Provider>
       {/* </QueryClientProvider> */}
