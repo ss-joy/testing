@@ -38,7 +38,12 @@ const AudioRecorderPage = () => {
   const [recordedAudios, setRecordedAudios] = useState<string[]>();
   const [isUploading, setIsuploading] = useState<boolean>(false);
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [browserSupport, setBrowserSupport] = useState<Record<any, any>>({});
+  const [browserSupportForPlaying, setBrowserSupportForPlaying] = useState<
+    Record<any, any>
+  >({});
+  const [browserSupportForRecording, setBrowserSupportForRecording] = useState<
+    Record<any, any>
+  >({});
 
   useEffect(() => {
     async function getData() {
@@ -64,7 +69,7 @@ const AudioRecorderPage = () => {
   }, [isUploading]);
 
   useEffect(() => {
-    const supportedFormats = {
+    const supportedFormatsForPlaying = {
       wav: testAudioRef.current?.canPlayType("audio/wav"),
       mp3: testAudioRef.current?.canPlayType("audio/mpeg"),
       m4a: testAudioRef.current?.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
@@ -72,7 +77,18 @@ const AudioRecorderPage = () => {
       webm: testAudioRef.current?.canPlayType('audio/webm; codecs="vorbis"'),
       aac: testAudioRef.current?.canPlayType("audio/aac"),
     };
-    setBrowserSupport(supportedFormats);
+
+    const supportedFormatsForRecording = {
+      wav: MediaRecorder.isTypeSupported("audio/wav"),
+      mp3: MediaRecorder.isTypeSupported("audio/mpeg"),
+      m4a: MediaRecorder.isTypeSupported("audio/mp4"),
+      ogg: MediaRecorder.isTypeSupported("audio/ogg"),
+      webm: MediaRecorder.isTypeSupported("audio/webm"),
+      aac: MediaRecorder.isTypeSupported("audio/aac"),
+    };
+
+    setBrowserSupportForPlaying(supportedFormatsForPlaying);
+    setBrowserSupportForRecording(supportedFormatsForRecording);
   }, []);
 
   async function startRecording(): Promise<void> {
@@ -86,6 +102,8 @@ const AudioRecorderPage = () => {
     const audioChunks: Blob[] = [];
 
     mediaRecorderRef.current.ondataavailable = (e) => {
+      console.log("chunks here =>");
+      console.log(e.data);
       audioChunks.push(e.data);
     };
 
@@ -93,6 +111,8 @@ const AudioRecorderPage = () => {
       const audioBlob = new Blob(audioChunks, {
         type: "audio/wav",
       });
+      console.log("combined blob here =>");
+      console.log(audioBlob);
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
       setAudioBlob(audioBlob);
@@ -193,8 +213,28 @@ const AudioRecorderPage = () => {
 "maybe" = format might be supported
 "probably" = format should be supported`}
         </pre>
-        {/* <div className="border border-slate-500">{navigator.userAgent}</div> */}
-        <div className="break-all">{JSON.stringify(browserSupport)}</div>
+        <div className="break-all">
+          {JSON.stringify(browserSupportForPlaying)}
+        </div>
+      </div>
+
+      <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%] mt-4">
+        <h2 className="text-3xl">Browser support</h2>
+        <p>
+          <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
+          Browsers can{" "}
+          <span className="uppercase text-green-500 font-bold">record</span> the
+          listed audio files....
+        </p>
+        <pre>
+          {`
+"" (empty string) = format not supported
+"maybe" = format might be supported
+"probably" = format should be supported`}
+        </pre>
+        <div className="break-all">
+          {JSON.stringify(browserSupportForRecording)}
+        </div>
       </div>
     </div>
   );
