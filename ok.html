@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Voice Recorder</title>
+    <style>
+      .voice-recorder {
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        max-width: 400px;
+        margin: 20px auto;
+      }
+
+      button {
+        margin: 5px;
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      #recordingStatus {
+        margin-top: 10px;
+        font-style: italic;
+      }
+
+      #audioPlayer {
+        width: 100%;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="voice-recorder">
+      <button id="recordButton">Record</button>
+      <button id="stopButton" disabled>Stop</button>
+      <button id="playButton" disabled>Play</button>
+      <button id="downloadButton" disabled>Download</button>
+      <button id="uploadButton" disabled>Upload</button>
+      <div id="recordingStatus"></div>
+      <audio id="audioPlayer" controls style="display: none"></audio>
+    </div>
+
+    <script>
+      // Global variables
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let audioBlob = null;
+      let isRecording = false;
+      let timerInterval = null;
+      let startTime = null;
+
+      // DOM elements
+      const recordButton = document.getElementById("recordButton");
+      const stopButton = document.getElementById("stopButton");
+      const playButton = document.getElementById("playButton");
+      const downloadButton = document.getElementById("downloadButton");
+      const uploadButton = document.getElementById("uploadButton");
+      const recordingStatus = document.getElementById("recordingStatus");
+      const audioPlayer = document.getElementById("audioPlayer");
+
+      // Start recording function
+      async function startRecording() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunks.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlayer.src = audioUrl;
+            audioPlayer.style.display = "block";
+
+            // Enable buttons
+            playButton.disabled = false;
+            downloadButton.disabled = false;
+            uploadButton.disabled = false;
+          };
+
+          // Start recording
+          mediaRecorder.start();
+          isRecording = true;
+
+          // Update UI
+          recordButton.disabled = true;
+          stopButton.disabled = false;
+          recordingStatus.textContent = "Recording...";
+
+          // Start timer
+          startTimer();
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          recordingStatus.textContent = "Error: Could not access microphone";
+        }
+      }
+
+      // Stop recording function
+      function stopRecording() {
+        if (mediaRecorder && isRecording) {
+          mediaRecorder.stop();
+          isRecording = false;
+
+          // Stop all tracks
+          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+
+          // Update UI
+          recordButton.disabled = false;
+          stopButton.disabled = true;
+          recordingStatus.textContent = "Recording stopped";
+
+          // Stop timer
+          stopTimer();
+        }
+      }
+
+      // Play recording function
+      function playRecording() {
+        if (audioPlayer.src) {
+          audioPlayer.play();
+        }
+      }
+
+      // Download recording function
+      function downloadRecording() {
+        if (audioBlob) {
+          const url = URL.createObjectURL(audioBlob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = "voice-message.wav";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      // Upload recording function
+      async function uploadRecording() {
+        if (!audioBlob) return;
+
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "voice-message.wav");
+
+          uploadButton.disabled = true;
+          recordingStatus.textContent = "Uploading...";
+
+          const response = await fetch("/upload-audio", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.ok) {
+            recordingStatus.textContent = "Upload successful!";
+          } else {
+            throw new Error("Upload failed");
+          }
+        } catch (error) {
+          console.error("Error uploading file:", error);
+          recordingStatus.textContent = "Upload failed";
+        } finally {
+          uploadButton.disabled = false;
+        }
+      }
+
+      // Timer functions
+      function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+        }
+      }
+
+      function updateTimer() {
+        const elapsed = Date.now() - startTime;
+        const seconds = Math.floor(elapsed / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        recordingStatus.textContent = `Recording: ${minutes}:${remainingSeconds
+          .toString()
+          .padStart(2, "0")}`;
+      }
+
+      // Event listeners
+      recordButton.addEventListener("click", startRecording);
+      stopButton.addEventListener("click", stopRecording);
+      playButton.addEventListener("click", playRecording);
+      downloadButton.addEventListener("click", downloadRecording);
+      uploadButton.addEventListener("click", uploadRecording);
+    </script>
+  </body>
+</html>
