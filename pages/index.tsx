@@ -37,6 +37,8 @@ const AudioRecorderPage = () => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedAudios, setRecordedAudios] = useState<string[]>();
   const [isUploading, setIsuploading] = useState<boolean>(false);
+  const testAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [browserSupport, setBrowserSupport] = useState<Record<any, any>>({});
 
   useEffect(() => {
     async function getData() {
@@ -47,14 +49,12 @@ const AudioRecorderPage = () => {
           offset: 0,
           sortBy: { column: "name", order: "asc" },
         });
-      console.log(data);
       const urlList: string[] = [];
       data?.forEach((d) => {
         if (d.name === ".emptyFolderPlaceholder") return;
         const { data: pubUrl } = supabase.storage
           .from("sei bucket")
           .getPublicUrl(`mama/${d.name}`);
-        // console.log(pubUrl);
 
         urlList.push(pubUrl.publicUrl);
       });
@@ -62,6 +62,18 @@ const AudioRecorderPage = () => {
     }
     getData();
   }, [isUploading]);
+
+  useEffect(() => {
+    const supportedFormats = {
+      wav: testAudioRef.current?.canPlayType("audio/wav"),
+      mp3: testAudioRef.current?.canPlayType("audio/mpeg"),
+      m4a: testAudioRef.current?.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
+      ogg: testAudioRef.current?.canPlayType('audio/ogg; codecs="vorbis"'),
+      webm: testAudioRef.current?.canPlayType('audio/webm; codecs="vorbis"'),
+      aac: testAudioRef.current?.canPlayType("audio/aac"),
+    };
+    setBrowserSupport(supportedFormats);
+  }, []);
 
   async function startRecording(): Promise<void> {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -122,6 +134,7 @@ const AudioRecorderPage = () => {
 
   return (
     <div className="">
+      <audio src="" ref={testAudioRef}></audio>
       <div className="flex gap-1 w-[80%] mx-auto justify-center mt-4">
         <Button
           onClick={() => startRecording()}
@@ -166,6 +179,23 @@ const AudioRecorderPage = () => {
           <audio src={d} key={index} controls></audio>
         ))}
       </section>
+      <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
+        <h2 className="text-3xl">Browser support</h2>
+        <p>
+          <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
+          Browsers can{" "}
+          <span className="uppercase text-green-500 font-bold">play</span> the
+          listed audio files....
+        </p>
+        <pre>
+          {`
+"" (empty string) = format not supported
+"maybe" = format might be supported
+"probably" = format should be supported`}
+        </pre>
+        {/* <div className="border border-slate-500">{navigator.userAgent}</div> */}
+        <div className="break-all">{JSON.stringify(browserSupport)}</div>
+      </div>
     </div>
   );
 };
