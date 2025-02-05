@@ -1,23 +1,3 @@
-// import { Button } from "@/components/ui/button";
-// import React, { useState } from "react";
-
-// const IndexPage = () => {
-//   const [count, setCount] = useState<number>(0);
-//   return (
-//     <div>
-//       {count}
-//       <br />
-//       <Button
-//         variant={"secondary"}
-//         onClick={() => setCount((prev) => prev + 1)}
-//       >
-//         Increase
-//       </Button>
-//     </div>
-//   );
-// };
-
-// export default IndexPage;
 import { Button } from "@/components/ui/button";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -45,6 +25,45 @@ const AudioRecorderPage = () => {
   >({});
   const [mediaRecorderSupported, setMediaRecorderSupported] =
     useState<boolean>(false);
+  const [selectedMimeType, setSelectedMimeType] = useState<string>("");
+
+  const getBestSupportedFormat = (): string => {
+    const preferredFormats = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4;codecs=mp4a.40.2",
+      "audio/mpeg",
+      "audio/wav",
+    ];
+
+    for (const format of preferredFormats) {
+      if (MediaRecorder.isTypeSupported(format)) {
+        return format;
+      }
+    }
+
+    return "audio/webm"; // fallback
+  };
+
+  const getFileExtensionFromMimeType = (mimeType: string): string => {
+    const mimeToExtension: Record<string, string> = {
+      "audio/webm": "webm",
+      "audio/webm;codecs=opus": "webm",
+      "audio/ogg": "ogg",
+      "audio/ogg;codecs=opus": "ogg",
+      "audio/mp4": "m4a",
+      "audio/mp4;codecs=mp4a.40.2": "m4a",
+      "audio/mpeg": "mp3",
+      "audio/wav": "wav",
+      "audio/aac": "aac",
+    };
+
+    // Remove any codec information for matching
+    const baseType = mimeType.split(";")[0];
+    return mimeToExtension[mimeType] || mimeToExtension[baseType] || "webm";
+  };
 
   useEffect(() => {
     async function getData() {
@@ -69,15 +88,6 @@ const AudioRecorderPage = () => {
     getData();
   }, [isUploading]);
 
-  function getBestSupportedFormat() {
-    const formats = ["webm", "ogg", "mp4", "wav"];
-    return (
-      formats.find((format) =>
-        MediaRecorder.isTypeSupported(`audio/${format}`)
-      ) || "webm"
-    );
-  }
-
   useEffect(() => {
     const supportedFormatsForPlaying = {
       wav: testAudioRef.current?.canPlayType("audio/wav"),
@@ -97,6 +107,9 @@ const AudioRecorderPage = () => {
       aac: MediaRecorder.isTypeSupported("audio/aac"),
     };
 
+    const bestFormat = getBestSupportedFormat();
+
+    setSelectedMimeType(bestFormat);
     setBrowserSupportForPlaying(supportedFormatsForPlaying);
     setBrowserSupportForRecording(supportedFormatsForRecording);
     setMediaRecorderSupported(!!window.MediaRecorder);
@@ -109,7 +122,9 @@ const AudioRecorderPage = () => {
     setIsRecording(true);
     setAudioUrl(undefined);
 
-    mediaRecorderRef.current = new MediaRecorder(mediaStream);
+    mediaRecorderRef.current = new MediaRecorder(mediaStream, {
+      mimeType: selectedMimeType,
+    });
     const audioChunks: Blob[] = [];
 
     mediaRecorderRef.current.ondataavailable = (e) => {
@@ -120,7 +135,7 @@ const AudioRecorderPage = () => {
 
     mediaRecorderRef.current.onstop = (e) => {
       const audioBlob = new Blob(audioChunks, {
-        type: "audio/wav",
+        type: selectedMimeType,
       });
       console.log("final combined blob here =>");
       console.log(audioBlob);
@@ -148,18 +163,10 @@ const AudioRecorderPage = () => {
   async function uploadAudioToBakend() {
     if (!audioBlob) return;
     setIsuploading(true);
-
-    // const formData = new FormData();
-    // formData.append("file", audioBlob, "test1.wav");
-
-    // const res = await axios.post(
-    //   "http://localhost:5000/api/file-upload/audio",
-    //   formData
-    // );
-    // console.log(res);
+    const fileExtension = getFileExtensionFromMimeType(selectedMimeType);
     const { data, error } = await supabase.storage
       .from("sei bucket")
-      .upload(`mama/${crypto.randomUUID()}.wav`, audioBlob);
+      .upload(`mama/${crypto.randomUUID()}.${fileExtension}`, audioBlob);
     setIsuploading(false);
   }
 
@@ -211,10 +218,11 @@ const AudioRecorderPage = () => {
       </section>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
         <h2 className="text-3xl">Browser support</h2>
-        Supprot for MediaRecorder : {mediaRecorderSupported ? "yes" : "no"}
+        Supprot for MediaRecorder :{" "}
+        {mediaRecorderSupported ? " Available" : " Not Available"}
         <div className="break-all"></div>
       </div>
-      <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
+      {/* <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
         <h2 className="text-3xl">Browser support</h2>
         <p>
           <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
@@ -231,10 +239,13 @@ const AudioRecorderPage = () => {
         <div className="break-all">
           {JSON.stringify(browserSupportForPlaying)}
         </div>
-      </div>
+      </div> */}
 
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%] mt-4">
         <h2 className="text-3xl">Browser support</h2>
+        <p className="font-semibold mb-2">
+          Currently using: {selectedMimeType}
+        </p>
         <p>
           <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
           Browsers can{" "}
@@ -242,7 +253,15 @@ const AudioRecorderPage = () => {
           listed audio files....
         </p>
         <div className="break-all">
-          {JSON.stringify(browserSupportForRecording)}
+          {Object.entries(browserSupportForRecording).map(
+            ([key, value], index) => {
+              return (
+                <div key={index}>
+                  {key} : {value ? "🟢yes" : "🔴NO"}
+                </div>
+              );
+            }
+          )}
         </div>
       </div>
     </div>
