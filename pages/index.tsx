@@ -223,11 +223,10 @@ const AudioRecorderPage = () => {
         <div className="break-all"></div>
       </div>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
-        <h2 className="text-3xl">Browser support</h2>
         <p>
-          <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
+          <span className="uppercase text-orange-500 font-bold">YOUR</span>{" "}
           Browsers can{" "}
-          <span className="uppercase text-green-500 font-bold">play</span> the
+          <span className="uppercase text-orange-500 font-bold">play</span> the
           listed audio files....
         </p>
 
@@ -252,15 +251,14 @@ const AudioRecorderPage = () => {
       </div>
 
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%] mt-4">
-        <h2 className="text-3xl">Browser support</h2>
         <p className="font-semibold mb-2">
           Currently using: {selectedMimeType}
         </p>
         <p>
-          <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
+          <span className="uppercase text-orange-500 font-bold">YOUR</span>{" "}
           Browsers can{" "}
-          <span className="uppercase text-green-500 font-bold">record</span> the
-          listed audio files....
+          <span className="uppercase text-orange-500 font-bold">record</span>{" "}
+          the listed audio files....
         </p>
         <div className="break-all">
           {Object.entries(browserSupportForRecording).map(
