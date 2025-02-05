@@ -218,7 +218,7 @@ const AudioRecorderPage = () => {
       </section>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
         <h2 className="text-3xl">Browser support</h2>
-        Supprot for MediaRecorder :{" "}
+        Support for MediaRecorder :{" "}
         {mediaRecorderSupported ? " Available" : " Not Available"}
         <div className="break-all"></div>
       </div>
