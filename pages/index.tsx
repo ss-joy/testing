@@ -213,7 +213,7 @@ const AudioRecorderPage = () => {
           Recorded audios
         </h1>
         {recordedAudios?.map((d, index) => (
-          <audio src={d} key={index} controls></audio>
+          <audio src={d} key={index} controls preload="metadata"></audio>
         ))}
       </section>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
@@ -230,14 +230,24 @@ const AudioRecorderPage = () => {
           <span className="uppercase text-green-500 font-bold">play</span> the
           listed audio files....
         </p>
-        <ul>
-          <li>"" (empty string) = format not supported</li>
-          <li>"maybe" = format might be supported</li>
-          <li>"probably" = format should be supported</li>
-        </ul>
 
         <div className="break-all">
-          {JSON.stringify(browserSupportForPlaying)}
+          {Object.entries(browserSupportForPlaying).map(
+            ([format, value], index) => {
+              return (
+                <div key={index}>
+                  {format} :{" "}
+                  {value === ""
+                    ? "🔴 NO SUPPORT"
+                    : value === "probably"
+                    ? "🟢 will play"
+                    : value === "maybe"
+                    ? "🟡 not enough info"
+                    : "🔺Got no info🔺"}
+                </div>
+              );
+            }
+          )}
         </div>
       </div>
 
