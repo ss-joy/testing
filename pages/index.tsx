@@ -19,7 +19,6 @@
 
 // export default IndexPage;
 import { Button } from "@/components/ui/button";
-import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@supabase/supabase-js";
@@ -39,11 +38,13 @@ const AudioRecorderPage = () => {
   const [isUploading, setIsuploading] = useState<boolean>(false);
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const [browserSupportForPlaying, setBrowserSupportForPlaying] = useState<
-    Record<any, any>
+    Record<string, any>
   >({});
   const [browserSupportForRecording, setBrowserSupportForRecording] = useState<
-    Record<any, any>
+    Record<string, any>
   >({});
+  const [mediaRecorderSupported, setMediaRecorderSupported] =
+    useState<boolean>(false);
 
   useEffect(() => {
     async function getData() {
@@ -68,6 +69,15 @@ const AudioRecorderPage = () => {
     getData();
   }, [isUploading]);
 
+  function getBestSupportedFormat() {
+    const formats = ["webm", "ogg", "mp4", "wav"];
+    return (
+      formats.find((format) =>
+        MediaRecorder.isTypeSupported(`audio/${format}`)
+      ) || "webm"
+    );
+  }
+
   useEffect(() => {
     const supportedFormatsForPlaying = {
       wav: testAudioRef.current?.canPlayType("audio/wav"),
@@ -89,6 +99,7 @@ const AudioRecorderPage = () => {
 
     setBrowserSupportForPlaying(supportedFormatsForPlaying);
     setBrowserSupportForRecording(supportedFormatsForRecording);
+    setMediaRecorderSupported(!!window.MediaRecorder);
   }, []);
 
   async function startRecording(): Promise<void> {
@@ -102,7 +113,7 @@ const AudioRecorderPage = () => {
     const audioChunks: Blob[] = [];
 
     mediaRecorderRef.current.ondataavailable = (e) => {
-      console.log("chunks here =>");
+      console.log("on data available chunks here =>");
       console.log(e.data);
       audioChunks.push(e.data);
     };
@@ -111,7 +122,7 @@ const AudioRecorderPage = () => {
       const audioBlob = new Blob(audioChunks, {
         type: "audio/wav",
       });
-      console.log("combined blob here =>");
+      console.log("final combined blob here =>");
       console.log(audioBlob);
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
@@ -189,7 +200,6 @@ const AudioRecorderPage = () => {
           onClick={() => playRecordedAudio()}
         ></audio>
       ) : null}
-      {/* llll */}
 
       <section className="flex flex-col gap-5 mx-auto w-[80%] mt-5 items-center">
         <h1 className="text-center w-full text-lg text-slate-400">
@@ -201,18 +211,23 @@ const AudioRecorderPage = () => {
       </section>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
         <h2 className="text-3xl">Browser support</h2>
+        Supprot for MediaRecorder : {mediaRecorderSupported ? "yes" : "no"}
+        <div className="break-all"></div>
+      </div>
+      <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
+        <h2 className="text-3xl">Browser support</h2>
         <p>
           <span className="uppercase text-green-500 font-bold">YOUR</span>{" "}
           Browsers can{" "}
           <span className="uppercase text-green-500 font-bold">play</span> the
           listed audio files....
         </p>
-        <pre>
-          {`
-"" (empty string) = format not supported
-"maybe" = format might be supported
-"probably" = format should be supported`}
-        </pre>
+        <ul>
+          <li>"" (empty string) = format not supported</li>
+          <li>"maybe" = format might be supported</li>
+          <li>"probably" = format should be supported</li>
+        </ul>
+
         <div className="break-all">
           {JSON.stringify(browserSupportForPlaying)}
         </div>
@@ -226,12 +241,6 @@ const AudioRecorderPage = () => {
           <span className="uppercase text-green-500 font-bold">record</span> the
           listed audio files....
         </p>
-        <pre>
-          {`
-"" (empty string) = format not supported
-"maybe" = format might be supported
-"probably" = format should be supported`}
-        </pre>
         <div className="break-all">
           {JSON.stringify(browserSupportForRecording)}
         </div>
