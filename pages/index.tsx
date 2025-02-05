@@ -28,6 +28,11 @@ const AudioRecorderPage = () => {
   const [selectedMimeType, setSelectedMimeType] = useState<string>("");
 
   const getBestSupportedFormat = (): string => {
+    if (MediaRecorder.isTypeSupported("audio/mp4;codecs=mp4a.40.2")) {
+      return "audio/mp4;codecs=mp4a.40.2";
+    } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+      return "audio/mp4";
+    }
     const preferredFormats = [
       "audio/webm;codecs=opus",
       "audio/webm",
