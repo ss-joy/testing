@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
-import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
-
 import { createClient } from "@supabase/supabase-js";
 
 // Create a single supabase client for interacting with your database
@@ -101,6 +99,7 @@ const AudioRecorderPage = () => {
   return (
     <div>
       {isRecording ? "Recording.....!!!!! 🎙️🎙️🎙️🎙️" : null}
+
       <div className="flex gap-5">
         <Button
           onClick={() => startRecording()}
