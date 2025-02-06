@@ -230,7 +230,7 @@ const AudioRecorderPage = () => {
 
   return (
     <div className="">
-      wakelok support {"wakeLock" in navigator}
+      wakelok support {"wakeLock" in navigator ? "yes" : "no"}
       <audio src="" ref={testAudioRef}></audio>
       <div className="flex gap-1 w-[80%] mx-auto justify-center mt-4">
         <Button
