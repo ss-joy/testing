@@ -204,6 +204,13 @@ const AudioRecorderPage = () => {
           "Recording.....!!!!! 🎙️🎙️🎙️🎙️"
         </div>
       ) : null}
+
+      {isUploading ? (
+        <div className="text-center animate-pulse">
+          Uploading........!!!!🔼🔼🔼🔼
+        </div>
+      ) : null}
+
       {audioUrl ? (
         <audio
           controls
