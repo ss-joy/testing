@@ -14,7 +14,8 @@ const AudioRecorderPage = () => {
   const [audioUrl, setAudioUrl] = useState<string | undefined>(undefined);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordedAudios, setRecordedAudios] = useState<string[]>();
+  const [recordedAudios, setRecordedAudios] =
+    useState<{ url: string; name: string }[]>();
   const [isUploading, setIsuploading] = useState<boolean>(false);
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
   const [browserSupportForPlaying, setBrowserSupportForPlaying] = useState<
@@ -79,14 +80,14 @@ const AudioRecorderPage = () => {
           offset: 0,
           sortBy: { column: "name", order: "asc" },
         });
-      const urlList: string[] = [];
+      const urlList: { url: string; name: string }[] = [];
       data?.forEach((d) => {
         if (d.name === ".emptyFolderPlaceholder") return;
         const { data: pubUrl } = supabase.storage
           .from("sei bucket")
           .getPublicUrl(`mama/${d.name}`);
 
-        urlList.push(pubUrl.publicUrl);
+        urlList.push({ name: d.name, url: pubUrl.publicUrl });
       });
       setRecordedAudios(urlList);
     }
@@ -225,7 +226,10 @@ const AudioRecorderPage = () => {
           Recorded audios
         </h1>
         {recordedAudios?.map((d, index) => (
-          <audio src={d} key={index} controls preload="metadata"></audio>
+          <div key={index}>
+            <span className="text-slate-500">{d.name}</span>
+            <audio src={d.url} key={index} controls preload="metadata"></audio>
+          </div>
         ))}
       </section>
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%]">
