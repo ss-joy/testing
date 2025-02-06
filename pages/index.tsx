@@ -27,7 +27,6 @@ const AudioRecorderPage = () => {
   const [mediaRecorderSupported, setMediaRecorderSupported] =
     useState<boolean>(false);
   const [selectedMimeType, setSelectedMimeType] = useState<string>("");
-  const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
 
   const getBestSupportedFormat = (): string => {
     if (MediaRecorder.isTypeSupported("audio/mp4;codecs=mp4a.40.2")) {
@@ -52,29 +51,6 @@ const AudioRecorderPage = () => {
     }
 
     return "audio/webm"; // fallback
-  };
-  const requestWakeLock = async () => {
-    try {
-      if ("wakeLock" in navigator) {
-        const wakeLock = await navigator.wakeLock.request("screen");
-        setWakeLock(wakeLock);
-        console.log("Wake Lock is active");
-
-        // Add wake lock release on visibility change
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-      } else {
-        console.log("Wake Lock API not supported");
-      }
-    } catch (err) {
-      console.error(`Failed to get wake lock: ${err}`);
-    }
-  };
-
-  // Handle visibility change
-  const handleVisibilityChange = async () => {
-    if (document.visibilityState === "visible" && wakeLock === null) {
-      await requestWakeLock();
-    }
   };
 
   const getFileExtensionFromMimeType = (mimeType: string): string => {
@@ -144,74 +120,46 @@ const AudioRecorderPage = () => {
     setBrowserSupportForRecording(supportedFormatsForRecording);
     setMediaRecorderSupported(!!window.MediaRecorder);
   }, []);
-  useEffect(() => {
-    return () => {
-      if (wakeLock) {
-        wakeLock.release();
-      }
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [wakeLock]);
 
   async function startRecording(): Promise<void> {
-    try {
-      await requestWakeLock();
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+    setIsRecording(true);
+    setAudioUrl(undefined);
+
+    mediaRecorderRef.current = new MediaRecorder(mediaStream, {
+      mimeType: selectedMimeType,
+    });
+    const audioChunks: Blob[] = [];
+
+    mediaRecorderRef.current.ondataavailable = (e) => {
+      console.log("on data available chunks here =>");
+      console.log(e.data);
+      audioChunks.push(e.data);
+    };
+
+    mediaRecorderRef.current.onstop = (e) => {
+      const audioBlob = new Blob(audioChunks, {
+        type: selectedMimeType,
       });
-      if ("AudioContext" in window) {
-        const audioContext = new AudioContext();
-        const source = audioContext.createMediaStreamSource(mediaStream);
-        source.connect(audioContext.destination);
-      }
-      setIsRecording(true);
-      setAudioUrl(undefined);
+      console.log("final combined blob here =>");
+      console.log(audioBlob);
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+      setAudioBlob(audioBlob);
+    };
 
-      mediaRecorderRef.current = new MediaRecorder(mediaStream, {
-        mimeType: selectedMimeType,
-      });
-      const audioChunks: Blob[] = [];
-
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        console.log("on data available chunks here =>");
-        console.log(e.data);
-        audioChunks.push(e.data);
-      };
-
-      mediaRecorderRef.current.onstop = (e) => {
-        const audioBlob = new Blob(audioChunks, {
-          type: selectedMimeType,
-        });
-        console.log("final combined blob here =>");
-        console.log(audioBlob);
-        const url = URL.createObjectURL(audioBlob);
-        setAudioUrl(url);
-        setAudioBlob(audioBlob);
-      };
-
-      mediaRecorderRef.current.start();
-    } catch (error) {
-      console.log(error);
-    }
+    mediaRecorderRef.current.start();
   }
 
-  async function stopRecording(): Promise<void> {
-    try {
-      mediaRecorderRef.current?.stop();
-      mediaRecorderRef?.current?.stream
-        .getTracks()
-        .forEach((track) => track.stop());
-      // Release wake lock when stopping recording
-      if (wakeLock) {
-        await wakeLock.release();
-        setWakeLock(null);
-      }
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  async function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef?.current?.stream
+      .getTracks()
+      .forEach((track) => track.stop());
 
-      setIsRecording(false);
-    } catch (error) {
-      console.log(error);
-    }
+    setIsRecording(false);
   }
 
   async function playRecordedAudio() {
@@ -230,7 +178,6 @@ const AudioRecorderPage = () => {
 
   return (
     <div className="">
-      wakelok support {"wakeLock" in navigator ? "yes" : "no"}
       <audio src="" ref={testAudioRef}></audio>
       <div className="flex gap-1 w-[80%] mx-auto justify-center mt-4">
         <Button
@@ -258,11 +205,13 @@ const AudioRecorderPage = () => {
           "Recording.....!!!!! 🎙️🎙️🎙️🎙️"
         </div>
       ) : null}
+
       {isUploading ? (
         <div className="text-center animate-pulse">
           Uploading........!!!!🔼🔼🔼🔼
         </div>
       ) : null}
+
       {audioUrl ? (
         <audio
           controls
@@ -271,6 +220,7 @@ const AudioRecorderPage = () => {
           onClick={() => playRecordedAudio()}
         ></audio>
       ) : null}
+
       <section className="flex flex-col gap-5 mx-auto w-[80%] mt-5 items-center">
         <h1 className="text-center w-full text-lg text-slate-400">
           Recorded audios
@@ -315,6 +265,7 @@ const AudioRecorderPage = () => {
           )}
         </div>
       </div>
+
       <div className="border-2 rounded-md p-2 border-sky-400 mx-auto w-[80%] mt-4">
         <p className="font-semibold mb-2">
           Currently using: {selectedMimeType}
